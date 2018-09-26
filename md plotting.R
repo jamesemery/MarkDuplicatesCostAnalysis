@@ -39,6 +39,8 @@ plotTimeVsCost <- function(df, controls, controls2) {
   p <- p + geom_vline(xintercept =controls[2])
   p <- p + geom_hline(yintercept =controls[1])
   p <- p + theme_bw()
+  p <- p + ylab("Cost ($)")
+  p <- p + xlab("Time (Hours)")
   print(p)
 }
 
@@ -116,11 +118,10 @@ plotTimeVsCostMemoryFlavor <- function(df, controls) {
 }
 ######################################## Inputting Data ########################################
 
-
-trialMedium <- "/Users/emeryj/Documents/big_trial.manipulated.csv"
-trialbam1 <- "/Users/emeryj/hellbender/Scripts/markDuplicatesTesting/picardComparison/stressTest/withSplittingIndexTrial/Analysis/marktimingbam1.csv"
-trialbam2 <- "/Users/emeryj/hellbender/Scripts/markDuplicatesTesting/picardComparison/stressTest/withSplittingIndexTrial/Analysis/results-bam2.csv"
-trialbam3 <- "/Users/emeryj/hellbender/Scripts/markDuplicatesTesting/picardComparison/stressTest/withSplittingIndexTrial/Analysis/marktimingbam3.csv"
+trialMedium <- "big_trial.manipulated.csv"
+trialbam1 <- "marktimingbam1.csv"
+trialbam2 <- "results-bam2.csv"
+trialbam3 <- "marktimingbam3.csv"
 tblm <- reformatData(loadTable(trialMedium))
 tbl1 <- loadTable(trialbam1)
 tbl2 <- loadTable(trialbam2)

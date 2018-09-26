@@ -74,7 +74,10 @@ plotCoresvsCostBreakdown <-function(df) {
   
   grouped <- group_by(dfp, sku_description,  Preemptible, cores) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
   
-  ggplot(data=grouped, aes(x=as.numeric(cores), y=cost, fill=sku_description)) + geom_area() + facet_grid(. ~Preemptible)
+  p <- ggplot(data=grouped, aes(x=as.numeric(cores), y=cost, fill=sku_description)) 
+  p <- p + geom_area()
+  p <- p + facet_grid(. ~Preemptible)
+  print(p)
 }
 
 plotMemoryVsCostOverSparkLoader <- function(df) {

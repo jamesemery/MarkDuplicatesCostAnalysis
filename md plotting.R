@@ -74,6 +74,14 @@ plotCoresvsCostBreakdown <-function(df) {
   ggplot(data=grouped, aes(x=as.numeric(cores), y=cost, fill=sku_description)) + geom_area() + facet_grid(. ~Preemptible)
 }
 
+plotMemoryVsCostOverSparkLoader <- function(df) {
+  dfp <- df %>% filter( memory!="208" && execution_type=="newtool" && spark_loader!="nioinput"  && disk_space==375 && Preemptible!="Preemptible"); dfp
+  
+  grouped <- group_by(dfp, memory,  Preemptible, spark_loader, cores) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
+  
+  ggplot(data=grouped, aes(x=as.numeric(memory), y=cost, color=cores)) + geom_line() + geom_point() + facet_grid(. ~spark_loader)
+}
+
 
 plotCoresvsCostBreakdownPicardControl <-function(dfp) {
   dfp <- shrunkbam2 %>% filter( execution_type!="newtool" && execution_type!="noop" ); dfp
@@ -146,17 +154,9 @@ plotCoresvsCostBreakdownPicardControl(shrunkbam2)
 plotCoresvsCostBreakdown(shrunkbam3)
 plotCoresvsCostBreakdownPicardControl(shrunkbam3)
 ## Making the separeated data
-## testing plotting memory vs cost
+## Plotting memory vs cost
 
-dfp <- shrunkbam2 %>% filter(  spark_loader=="disq" && memory==15 && disk_space==375 ); dfp
-
-dfp <- dfp %>% filter( cost > 0)
-
-grouped <- group_by(dfp, sku_description,  Preemptible, cores) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
-
-ggplot(data=grouped, aes(x=as.numeric(cores), y=cost, fill=sku_description)) + geom_area() + facet_grid(. ~Preemptible)
-
-
+plotMemoryVsCostOverSparkLoader(shrunkbam1)
 
 ## plotting various things 
 summed1 %>% filter(!str_detect(execution_type, "newtool")) %>% summarise_at(vars(cost:time), sum, na.rm = TRUE); 

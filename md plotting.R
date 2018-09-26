@@ -42,9 +42,6 @@ addControlToCostPlot <- function(p, x, y, label) {
   return(p)
 }
 
-plotTimeVsCost(summed2,controlstotal2)
-
-
 reformatData <- function(df) {
   mod <- df %>% mutate(persisient = str_replace(persisient, "p", "Preemptible")) %>% mutate(persisient = str_replace(persisient, "x", "non-Preemptible"))
   mod <- mod %>% mutate(sku_description = str_replace(sku_description, " attached to Preemptible VMs", ""))  %>% mutate(sku_description = str_replace(sku_description, "Preemptible ", ""))
@@ -54,6 +51,7 @@ reformatData <- function(df) {
   mod$persisient <- NULL
   
   mod$cores <- as.integer(mod$cores)
+  mod$memory <- as.numeric(mod$memory)
   return(mod)
 }
 
@@ -80,11 +78,22 @@ plotCoresvsCostBreakdown <-function(df) {
 }
 
 plotMemoryVsCostOverSparkLoader <- function(df) {
+  df$memory <- mapply(adjustMemory, df$memory, df$cores)
+  df$cores <- as.factor(df$cores)
   dfp <- df %>% filter( memory!="208" && execution_type=="newtool" && spark_loader!="nioinput"  && disk_space==375 && Preemptible!="Preemptible"); dfp
   
   grouped <- group_by(dfp, memory,  Preemptible, spark_loader, cores) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
   
-  ggplot(data=grouped, aes(x=as.numeric(memory), y=cost, color=cores)) + geom_line() + geom_point() + facet_grid(. ~spark_loader)
+  p <- ggplot(data=grouped, aes(x=as.numeric(memory), y=cost, color=cores))
+  p <- p + geom_line() + geom_point() 
+  p <- p + facet_grid(. ~spark_loader)
+  p <- p + labs(title = "Cost vs Memory for MarkDuplicatesSpark",
+                subtitle="Split by spark bam-backend and Grouped by Number of Cores",
+                color = "Number of Cores")
+  p <- p + ylab("Cost ($)")
+  p <- p + xlab("Memory (Gb)")
+  p <- p + theme_bw()
+  print(p)
 }
 
 
@@ -148,6 +157,12 @@ summed2
 shrunkbam3 <- bam3 %>% group_by(execution_type, spark_loader, cores, memory, disk_space, Preemptible)
 summed3 <- shrunkbam2 %>% summarise_at(vars(cost:time), sum, na.rm = TRUE)
 summed3
+
+adjustMemory <- function(memory, cores){
+  return(max(memory, 0.9 * cores))
+}
+
+
 
 ######################################## Plotting ########################################
 ## Plotting Cores vs. Cost Breakdown

@@ -17,6 +17,17 @@ collectPairedMDControl <- function(df, task1, task2) {
   return(c(sum(tmp$cost),sum(tmp$time)))
 }
 
+plotTimeVsCost <- function(df, controls) {
+  p <- ggplot(data=df, aes(x=time, y=cost, shape=Preemptible), color=cores) 
+  p <- p +  geom_point(aes(color=as.factor(cores))) 
+  p <- p +  xlim(c(0.1,20)) 
+  p <- p +geom_point(aes(x=controls[2],y=controls[1],color="purple"))
+  p <- p + geom_vline(xintercept =controls[2])
+  p <- p + geom_hline(yintercept =controls[1])
+  p <- p + theme_bw()
+  print(p)
+}
+
 plotTimeVsCost <- function(df, controls, controls2) {
   p <- ggplot(data=df, aes(x=time, y=cost, shape=Preemptible), color=cores) 
   p <- p +  geom_point(aes(color=as.factor(cores))) 
@@ -99,44 +110,68 @@ plotTimeVsCostMemoryFlavor <- function(df, controls) {
 
 
 trialMedium <- "/Users/emeryj/Documents/big_trial.manipulated.csv"
-trialbam1 <- "/Users/emeryj/hellbender/Scripts/markDuplicatesTesting/picardComparison/stressTest/withSplittingIndexTrial/Analysis"
+trialbam1 <- "/Users/emeryj/hellbender/Scripts/markDuplicatesTesting/picardComparison/stressTest/withSplittingIndexTrial/Analysis/marktimingbam1.csv"
 trialbam2 <- "/Users/emeryj/hellbender/Scripts/markDuplicatesTesting/picardComparison/stressTest/withSplittingIndexTrial/Analysis/results-bam2.csv"
-trialbam3 <- "/Users/emeryj/hellbender/Scripts/markDuplicatesTesting/picardComparison/stressTest/withSplittingIndexTrial/Analysis"
+trialbam3 <- "/Users/emeryj/hellbender/Scripts/markDuplicatesTesting/picardComparison/stressTest/withSplittingIndexTrial/Analysis/marktimingbam3.csv"
 tblm <- reformatData(loadTable(trialMedium))
 tbl1 <- loadTable(trialbam1)
 tbl2 <- loadTable(trialbam2)
 tbl3 <- loadTable(trialbam3)
 
-tbl2
-tbl2 %>% filter(((!grepl("newtool",labels_value,fixed=TRUE))&grepl("0bfdbf14-d7d9-4d2f-b48b-56832fccde14",labels_value,fixed=TRUE)))
 
-bam1 <- splitBamRuntimeDataToFormat(tbl1)
+bam1 <- splitBamRuntimeDataToFormat(tbl1, "2c3a5bed-98ea-4f73-9f46-3f3000bfc284")
 bam2 <- splitBamRuntimeDataToFormat(tbl2,"0bfdbf14-d7d9-4d2f-b48b-56832fccde14")
-bam3 <- splitBamRuntimeDataToFormat(tbl3)
+bam3 <- splitBamRuntimeDataToFormat(tbl3, "c22c3981-efa0-4488-b003-5564f3fa5483")
 
 ## Making the separeated data
 shrunk <- tblm %>% group_by(execution_type, spark_loader, cores, memory, disk_space, Preemptible) 
 summed <- shrunk %>% summarise_at(vars(cost:time), sum, na.rm = TRUE); summed
 
-
+shrunkbam1 <- bam1 %>% group_by(execution_type, spark_loader, cores, memory, disk_space, Preemptible)
+summed1 <- shrunkbam1 %>% summarise_at(vars(cost:time), sum, na.rm = TRUE)
+summed1
 shrunkbam2 <- bam2 %>% group_by(execution_type, spark_loader, cores, memory, disk_space, Preemptible)
 summed2 <- shrunkbam2 %>% summarise_at(vars(cost:time), sum, na.rm = TRUE)
 summed2
-
+shrunkbam3 <- bam3 %>% group_by(execution_type, spark_loader, cores, memory, disk_space, Preemptible)
+summed3 <- shrunkbam2 %>% summarise_at(vars(cost:time), sum, na.rm = TRUE)
+summed3
 
 ######################################## Plotting ########################################
 ## Plotting Cores vs. Cost Breakdown
+plotCoresvsCostBreakdown(shrunkbam1)
+plotCoresvsCostBreakdownPicardControl(shrunkbam1)
 plotCoresvsCostBreakdown(shrunkbam2)
 plotCoresvsCostBreakdownPicardControl(shrunkbam2)
+plotCoresvsCostBreakdown(shrunkbam3)
+plotCoresvsCostBreakdownPicardControl(shrunkbam3)
 ## Making the separeated data
+## testing plotting memory vs cost
+
+dfp <- shrunkbam2 %>% filter(  spark_loader=="disq" && memory==15 && disk_space==375 ); dfp
+
+dfp <- dfp %>% filter( cost > 0)
+
+grouped <- group_by(dfp, sku_description,  Preemptible, cores) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
+
+ggplot(data=grouped, aes(x=as.numeric(cores), y=cost, fill=sku_description)) + geom_area() + facet_grid(. ~Preemptible)
+
+
+
+## plotting various things 
+summed1 %>% filter(!str_detect(execution_type, "newtool")) %>% summarise_at(vars(cost:time), sum, na.rm = TRUE); 
+summed1 %>% filter(!str_detect(execution_type, "newtool"))
 
 controlData <- shrunk %>% filter(!str_detect(execution_type, "newtool")) %>% summarise_at(vars(cost:time), sum, na.rm = TRUE); 
 summed2 %>% filter(execution_type!="newtool")
 controlstotalm <- collectPairedMDControl(summed,"markduplicatesssd","picardmarkedsortedssd")
 controlstotal2preemptable <- collectPairedMDControl(summed2,"markduplicatespersistent-p","sortsampersistent-p")
 controlstotal2 <- collectPairedMDControl(summed2,"markduplicatespersistent","sortsampersistent")
+controlstotal3 <- collectPairedMDControl(summed3,"markduplicatespersistent","sortsampersistent")
 controlstotal2
 plotTimeVsCost(summed,controlstotalm)
-plotTimeVsCost(summed2,controlstotal2, controlstotal2preemptable)
+plotTimeVsCost(summed3,controlstotal3)
+plotTimeVsCost(summed2,controlstotal2)
+plotTimeVsCost(summed1,controlstotal2) #very bad
 plotTimeVsCostMemoryFlavor(summed,controlstotalm)
 

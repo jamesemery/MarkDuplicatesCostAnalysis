@@ -17,19 +17,22 @@ collectPairedMDControl <- function(df, task1, task2) {
   return(c(sum(tmp$cost),sum(tmp$time)))
 }
 
-plotTimeVsCost <- function(df, controls) {
+plotTimeVsCost <- function(df) {
   mod <- filter(df, time > 0)
   mod <- na.omit(mod)
   mod$Cores <- as.factor(mod$cores)
+  
   p <- ggplot(data=mod, aes(x=time, y=cost, shape=Preemptible, ymin=0, xmin=0), color=Cores) 
   p <- p + geom_point(aes(color=as.factor(cores))) 
   p <- p + theme_bw()
   p <- p + ylab("Cost ($)")
   p <- p + xlab("Time (Hours)")
-  p <- p + labs(title="Cost vs Time of MarkDuplicatesSpark", subtitle="Run with various parameters")
+  p <- p + labs(title="Cost vs Time of MarkDuplicatesSpark", subtitle="Run with varied parameters")
   p <- p + labs(color = "Number of Cores")
   p <- p + labs(shape = "Preemption")
   
+  
+
   pdf <- filter(df, execution_type != "newtool")
   pdf <- filter(pdf, !grepl("ssd", execution_type) && execution_type != "noop")
   pdf$cores <- 1
@@ -101,17 +104,19 @@ plotCoresvsCostBreakdown <-function(df) {
 }
 
 plotMemoryVsCostOverSparkLoader <- function(df) {
+
   df$memory <- mapply(adjustMemory, df$memory, df$cores)
   df$cores <- as.factor(df$cores)
-  dfp <- df %>% filter( memory!="208" && execution_type=="newtool" && spark_loader!="nioinput"  && disk_space==375 && Preemptible!="Preemptible"); dfp
+  dfp <- df %>% filter( execution_type=="newtool" && spark_loader!="nioinput"  && disk_space==375 && spark_loader=="disq"); dfp
   
-  grouped <- group_by(dfp, memory,  Preemptible, spark_loader, cores) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
-  
+  grouped <- group_by(dfp, memory,  Preemptible, spark_loader, cores) %>% summarise_at(vars(cost, time), sum, na.rm = TRUE)
+  grouped
+  grouped <- filter(grouped, time > 0.0)
   p <- ggplot(data=grouped, aes(x=as.numeric(memory), y=cost, color=cores))
   p <- p + geom_line() + geom_point() 
-  p <- p + facet_grid(. ~spark_loader)
+  p <- p + facet_grid(. ~Preemptible)
   p <- p + labs(title = "Cost vs Memory for MarkDuplicatesSpark",
-                subtitle="Split by spark bam-backend and Grouped by Number of Cores",
+                subtitle="Split by Preemption and Grouped by Number of Cores",
                 color = "Number of Cores")
   p <- p + ylab("Cost ($)")
   p <- p + xlab("Memory (Gb)")
@@ -199,7 +204,7 @@ plotCoresvsCostBreakdownPicardControl(shrunkbam3)
 ## Making the separeated data
 ## Plotting memory vs cost
 
-plotMemoryVsCostOverSparkLoader(shrunkbam1)
+plotMemoryVsCostOverSparkLoader(shrunkbam2)
 
 ## plotting various things 
 summed1 %>% filter(!str_detect(execution_type, "newtool")) %>% summarise_at(vars(cost:time), sum, na.rm = TRUE); 
@@ -212,9 +217,9 @@ controlstotal2preemptable <- collectPairedMDControl(summed2,"markduplicatespersi
 controlstotal2 <- collectPairedMDControl(summed2,"markduplicatespersistent","sortsampersistent")
 controlstotal3 <- collectPairedMDControl(summed3,"markduplicatespersistent","sortsampersistent")
 controlstotal2
-plotTimeVsCost(summed,controlstotalm)
-plotTimeVsCost(summed3,controlstotal3)
-plotTimeVsCost(summed2,controlstotal2)
-plotTimeVsCost(summed1,controlstotal2) #very bad
+plotTimeVsCost(summed)
+plotTimeVsCost(summed3)
+plotTimeVsCost(summed2)
+plotTimeVsCost(summed1) #very bad
 plotTimeVsCostMemoryFlavor(summed,controlstotalm)
 

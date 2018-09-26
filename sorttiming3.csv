@@ -1,0 +1,10 @@
+labels_key,labels_value,sku_description,cost,time
+"cromwell-workflow-id,wdl-call-alias,wdl-task-name","cromwell-cd943c57-cf0d-4d26-a19b-89550c38209f,sortsampersistent-p",Network Internet Egress from Americas to EMEA,0,0.0
+"cromwell-workflow-id,wdl-call-alias,wdl-task-name","cromwell-cd943c57-cf0d-4d26-a19b-89550c38209f,markduplicatesssd-p",Network Internet Egress from Americas to EMEA,0,5.78805555556
+"cromwell-workflow-id,wdl-call-alias,wdl-task-name","cromwell-cd943c57-cf0d-4d26-a19b-89550c38209f,markduplicatespersistent-p",Network Internet Egress from Americas to EMEA,0,5.50888888889
+"cromwell-workflow-id,wdl-call-alias,wdl-task-name","cromwell-cd943c57-cf0d-4d26-a19b-89550c38209f,markduplicatespersistent",Network Internet Egress from Americas to EMEA,0,5.49972222222
+"cromwell-workflow-id,wdl-call-alias,wdl-task-name","cromwell-cd943c57-cf0d-4d26-a19b-89550c38209f,sortsampersistent",Network Internet Egress from Americas to EMEA,0,0.0
+"cromwell-workflow-id,wdl-call-alias,wdl-task-name","cromwell-cd943c57-cf0d-4d26-a19b-89550c38209f,markduplicatesssd",Network Internet Egress from Americas to EMEA,0,5.70611111111
+"cromwell-workflow-id,wdl-call-alias,wdl-task-name","cromwell-cd943c57-cf0d-4d26-a19b-89550c38209f,picardmarkedsortedssd-p",Network Internet Egress from Americas to EMEA,0,5.33638888889
+"cromwell-workflow-id,wdl-call-alias,wdl-task-name","cromwell-cd943c57-cf0d-4d26-a19b-89550c38209f,picardmarkedsortedssd",Network Internet Egress from Americas to EMEA,0,5.37222222222
+"cromwell-workflow-id,wdl-call-alias,wdl-task-name","cromwell-cd943c57-cf0d-4d26-a19b-89550c38209f,noop",Network Internet Egress from Americas to EMEA,0,0.0536111111111

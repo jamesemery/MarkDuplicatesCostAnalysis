@@ -18,31 +18,32 @@ collectPairedMDControl <- function(df, task1, task2) {
 }
 
 plotTimeVsCost <- function(df, controls) {
-  p <- ggplot(data=df, aes(x=time, y=cost, shape=Preemptible), color=cores) 
-  p <- p +  geom_point(aes(color=as.factor(cores))) 
-  p <- p +  xlim(c(0.1,20)) 
-  p <- p +geom_point(aes(x=controls[2],y=controls[1],color="purple"))
-  p <- p + geom_vline(xintercept =controls[2])
-  p <- p + geom_hline(yintercept =controls[1])
-  p <- p + theme_bw()
-  print(p)
-}
-
-plotTimeVsCost <- function(df, controls, controls2) {
-  p <- ggplot(data=df, aes(x=time, y=cost, shape=Preemptible), color=cores) 
-  p <- p +  geom_point(aes(color=as.factor(cores))) 
-  p <- p +  xlim(c(0.1,20)) 
-  p <- p +geom_point(aes(x=controls2[2],y=controls2[1],color="purple"))
-  p <- p + geom_vline(xintercept =controls2[2])
-  p <- p + geom_hline(yintercept =controls2[1])
-  p <- p +geom_point(aes(x=controls[2],y=controls[1],color="purple"))
-  p <- p + geom_vline(xintercept =controls[2])
-  p <- p + geom_hline(yintercept =controls[1])
+  mod <- filter(df, time > 0)
+  mod <- na.omit(mod)
+  mod$Cores <- as.factor(mod$cores)
+  p <- ggplot(data=mod, aes(x=time, y=cost, shape=Preemptible, ymin=0, xmin=0), color=Cores) 
+  p <- p + geom_point(aes(color=as.factor(cores))) 
+  p <- addControlToCostPlot(p, controls[2], controls[1], "Picard MD + SS")
   p <- p + theme_bw()
   p <- p + ylab("Cost ($)")
   p <- p + xlab("Time (Hours)")
+  p <- p + labs(title="Cost vs Time of MarkDuplicatesSpark", subtitle="Run with various parameters")
+  p <- p + labs(color = "Number of Cores")
+  p <- p + labs(shape = "Preemption")
   print(p)
 }
+
+
+addControlToCostPlot <- function(p, x, y, label) {
+  p <- p + geom_point(x=x ,y=y, color="purple", show.legend=FALSE)
+  p <- p + geom_vline(xintercept=x, alpha = .5)
+  p <- p + geom_hline(yintercept=y, alpha = .5)
+  p <- p + geom_label(x = x - 2, y = y +.2, label=label)
+  return(p)
+}
+
+plotTimeVsCost(summed2,controlstotal2)
+
 
 reformatData <- function(df) {
   mod <- df %>% mutate(persisient = str_replace(persisient, "p", "Preemptible")) %>% mutate(persisient = str_replace(persisient, "x", "non-Preemptible"))
@@ -51,6 +52,8 @@ reformatData <- function(df) {
   mod <- mod %>% mutate(sku_description = str_replace(sku_description, " running in Americas", ""))
   mod$Preemptible <- mod$persisient
   mod$persisient <- NULL
+  
+  mod$cores <- as.integer(mod$cores)
   return(mod)
 }
 

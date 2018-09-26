@@ -23,24 +23,44 @@ plotTimeVsCost <- function(df, controls) {
   mod$Cores <- as.factor(mod$cores)
   p <- ggplot(data=mod, aes(x=time, y=cost, shape=Preemptible, ymin=0, xmin=0), color=Cores) 
   p <- p + geom_point(aes(color=as.factor(cores))) 
-  p <- addControlToCostPlot(p, controls[2], controls[1], "Picard MD + SS")
   p <- p + theme_bw()
   p <- p + ylab("Cost ($)")
   p <- p + xlab("Time (Hours)")
   p <- p + labs(title="Cost vs Time of MarkDuplicatesSpark", subtitle="Run with various parameters")
   p <- p + labs(color = "Number of Cores")
   p <- p + labs(shape = "Preemption")
+  
+  pdf <- filter(df, execution_type != "newtool")
+  pdf <- filter(pdf, !grepl("ssd", execution_type) && execution_type != "noop")
+  pdf$cores <- 1
+  pdf$Preemptible <- pdf$Preemptible <- ifelse(grepl("-p", pdf$execution_type), 'Preemptible', 'non-Preemptible')
+  
+  mdPre <- filter(pdf, Preemptible == "Preemptible")
+  p <- addControlToCostPlot(p, sum(mdPre$time), sum(mdPre$cost), NULL )
+  mdNon <- filter(pdf, Preemptible == "non-Preemptible")
+  p <- addControlToCostPlot(p, sum(mdNon$time), sum(mdNon$cost), "Picard MD + SS")
+  
+  
+  p <- p + geom_point(data=pdf)
+  
+
+  
   print(p)
 }
 
 
+
+
 addControlToCostPlot <- function(p, x, y, label) {
   p <- p + geom_point(x=x ,y=y, color="purple", show.legend=FALSE)
-  p <- p + geom_vline(xintercept=x, alpha = .5)
-  p <- p + geom_hline(yintercept=y, alpha = .5)
-  p <- p + geom_label(x = x - 2, y = y +.2, label=label)
+  p <- p + geom_vline(xintercept=x, alpha = .8, linetype="dotted")
+  p <- p + geom_hline(yintercept=y, alpha = .8, linetype="dotted")
+  if( length(label) > 0 ){
+    p <- p + geom_label(x = x - 2, y = y +.2, label=label)
+  }
   return(p)
 }
+
 
 reformatData <- function(df) {
   mod <- df %>% mutate(persisient = str_replace(persisient, "p", "Preemptible")) %>% mutate(persisient = str_replace(persisient, "x", "non-Preemptible"))
@@ -106,17 +126,17 @@ plotCoresvsCostBreakdownPicardControl <-function(dfp) {
   dfp <- dfp %>% filter( cost > 0)
   
   tmpa <- dfp #%>% filter(!grepl("Sorted",execution_type, fixed=TRUE)); 
-  tmpa <- separate(data = tmpa, col = execution_type, into = c("execution_type", "Premptible"), sep = "-")
-  tmpa <- tmpa %>% mutate(Premptible = str_replace(Premptible, "p", "Premptible"))
-  tmpa$Premptible <- ifelse(is.na(tmpa$Premptible), 'non-Premptible', tmpa$Premptible); tmpa
+  tmpa <- separate(data = tmpa, col = execution_type, into = c("execution_type", "Preemptible"), sep = "-")
+  tmpa <- tmpa %>% mutate(Preemptible = str_replace(Preemptible, "p", "Preemptible"))
+  tmpa$Preemptible <- ifelse(is.na(tmpa$Preemptible), 'non-Preemptible', tmpa$Preemptible); tmpa
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "markduplicatespersistent", "MD-persistent disk"))
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "markduplicatesssd", "MD-SSD"))
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "picardmarkedsortedssd", "Sort-SSD"))
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "sortsampersistent", "Sort-persistent disk"))
   
-  grouped <- group_by(tmpa, sku_description, execution_type, Premptible) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
+  grouped <- group_by(tmpa, sku_description, execution_type, Preemptible) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
   grouped
-  ggplot(data=grouped, aes(x=execution_type, y=cost, fill=sku_description)) + geom_bar(stat="identity") + facet_grid(. ~Premptible)
+  ggplot(data=grouped, aes(x=execution_type, y=cost, fill=sku_description)) + geom_bar(stat="identity") + facet_grid(. ~Preemptible)
 }
 
 

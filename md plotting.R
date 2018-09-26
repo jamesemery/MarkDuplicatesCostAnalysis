@@ -69,6 +69,12 @@ reformatData <- function(df) {
   mod$Preemptible <- mod$persisient
   mod$persisient <- NULL
   
+  mod <- mod %>% mutate(sku_description = str_replace(sku_description, "Custom instance Core", "Core"))
+  mod <- mod %>% mutate(sku_description = str_replace(sku_description, "Custom instance Ram", "Ram"))
+  mod <- mod %>% mutate(sku_description = str_replace(sku_description, "Network Internet Egress", "Egress"))
+  mod <- mod %>% mutate(sku_description = str_replace(sku_description, "SSD backed Local Storage", "SSD"))
+  mod <- mod %>% mutate(sku_description = str_replace(sku_description, "Storage PD Capacity", "HDD"))
+  
   mod$cores <- as.integer(mod$cores)
   mod$memory <- as.numeric(mod$memory)
   return(mod)
@@ -84,19 +90,6 @@ splitBamRuntimeDataToFormat <- function(df, runtimeToIgnore) {
   tmpb <- separate(data = tmpb, col = execution_type, into = c("execution_type", "spark_loader","cores","memory","disk_space","persisient"), sep = "-+")
   tmpb <- tmpb %>% mutate(memory = str_replace(memory, "gb", ""))
   return(reformatData(rbind(tmpa,tmpb)))
-}
-
-plotCoresvsCostBreakdown <-function(df) {
-  dfp <- df %>% filter(  spark_loader=="disq" && memory==15 && disk_space==375 ); dfp
-  
-  dfp <- dfp %>% filter( cost > 0)
-  
-  grouped <- group_by(dfp, sku_description,  Preemptible, cores) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
-  
-  p <- ggplot(data=grouped, aes(x=as.numeric(cores), y=cost, fill=sku_description)) 
-  p <- p + geom_area()
-  p <- p + facet_grid(. ~Preemptible)
-  print(p)
 }
 
 plotMemoryVsCostOverSparkLoader <- function(df) {
@@ -121,6 +114,24 @@ plotMemoryVsCostOverSparkLoader <- function(df) {
 }
 
 
+plotCoresvsCostBreakdown <-function(df) {
+  dfp <- df %>% filter(  spark_loader=="disq" && memory==15 && disk_space==375 ); dfp
+  
+  dfp <- dfp %>% filter( cost > 0)
+  dfp <- filter(dfp, sku_description != "Egress")
+  grouped <- group_by(dfp, sku_description,  Preemptible, cores) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
+  
+  p <- ggplot(data=grouped, aes(x=as.numeric(cores), y=cost, fill=sku_description)) 
+  p <- p + geom_area()
+  p <- p + facet_grid(. ~Preemptible)
+  p <- p + labs(title="MarkDuplicatesSpark Cost Breakdown by Cores",
+                subtitle="Subdivided by Preemptible", fill="Cost Category")
+  p <- p + xlab("Number of Cores") 
+  p <- p + ylab("Cost ($)")
+          
+  print(p)
+}
+
 plotCoresvsCostBreakdownPicardControl <-function(dfp) {
   dfp <- shrunkbam2 %>% filter( execution_type!="newtool" && execution_type!="noop" ); dfp
   dfp
@@ -130,14 +141,21 @@ plotCoresvsCostBreakdownPicardControl <-function(dfp) {
   tmpa <- separate(data = tmpa, col = execution_type, into = c("execution_type", "Preemptible"), sep = "-")
   tmpa <- tmpa %>% mutate(mutatedPreemptible = str_replace(Preemptible, "p", "Preemptible"))
   tmpa$mutatedPreemptible <- ifelse(is.na(tmpa$mutatedPreemptible), 'non-Preemptible', tmpa$mutatedPreemptible); tmpa
+  tmpa <- filter( tmpa, grepl("sort",execution_type))
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "markduplicatespersistent", "MD-persistent disk"))
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "markduplicatesssd", "MD-SSD"))
-  tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "picardmarkedsortedssd", "Sort-SSD"))
-  tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "sortsampersistent", "Sort-persistent disk"))
+  tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "picardmarkedsortedssd", "SSD"))
+  tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "sortsampersistent", "HDD"))
   
   grouped <- group_by(tmpa, sku_description, execution_type, mutatedPreemptible) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
   grouped
-  ggplot(data=grouped, aes(x=execution_type, y=cost, fill=sku_description)) + geom_bar(stat="identity") + facet_grid(. ~mutatedPreemptible)
+  p <- ggplot(data=grouped, aes(x=execution_type, y=cost, fill=sku_description)) 
+  p <- p + geom_bar(stat="identity") + facet_grid(. ~mutatedPreemptible)
+  p <- p + xlab("Disk Type")
+  p <- p + ylab("Cost (%)")
+  p <- p + labs(title="Picard SortSam cost breakdown on SSD and HDD",
+                subtitle("Subdivided by Preemption"),
+                fill="Cost Category")
 }
 
 
@@ -179,7 +197,7 @@ shrunkbam2 <- bam2 %>% group_by(execution_type, spark_loader, cores, memory, dis
 summed2 <- shrunkbam2 %>% summarise_at(vars(cost:time), sum, na.rm = TRUE)
 summed2
 shrunkbam3 <- bam3 %>% group_by(execution_type, spark_loader, cores, memory, disk_space, Preemptible)
-summed3 <- shrunkbam2 %>% summarise_at(vars(cost:time), sum, na.rm = TRUE)
+summed3 <- shrunkbam3 %>% summarise_at(vars(cost:time), sum, na.rm = TRUE)
 summed3
 
 #change memory to be the minimum memory given the number of cores if less was requested

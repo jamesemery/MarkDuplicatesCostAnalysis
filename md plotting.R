@@ -128,6 +128,7 @@ plotCoresvsCostBreakdown <-function(df) {
                 subtitle="Subdivided by Preemptible", fill="Cost Category")
   p <- p + xlab("Number of Cores") 
   p <- p + ylab("Cost ($)")
+  p <- p + theme_bw()
           
   print(p)
 }
@@ -156,6 +157,8 @@ plotCoresvsCostBreakdownPicardControl <-function(dfp) {
   p <- p + labs(title="Picard SortSam cost breakdown on SSD and HDD",
                 subtitle("Subdivided by Preemption"),
                 fill="Cost Category")
+  p <- p + theme_bw()
+  print(p)
 }
 
 

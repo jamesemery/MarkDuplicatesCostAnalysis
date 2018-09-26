@@ -31,8 +31,6 @@ plotTimeVsCost <- function(df) {
   p <- p + labs(color = "Number of Cores")
   p <- p + labs(shape = "Preemption")
   
-  
-
   pdf <- filter(df, execution_type != "newtool")
   pdf <- filter(pdf, !grepl("ssd", execution_type) && execution_type != "noop")
   pdf$cores <- 1
@@ -45,8 +43,6 @@ plotTimeVsCost <- function(df) {
   
   
   p <- p + geom_point(data=pdf)
-  
-
   
   print(p)
 }

@@ -113,6 +113,26 @@ plotMemoryVsCostOverSparkLoader <- function(df) {
   print(p)
 }
 
+plotHadoopBamVsDisq <- function(df) {
+  df$memory <- mapply(adjustMemory, df$memory, df$cores)
+  df$cores <- as.factor(df$cores)
+  dfp <- df %>% filter( execution_type=="newtool" && spark_loader!="nioinput"  && disk_space==375 && Preemptible=="non-Preemptible"); dfp
+  
+  grouped <- group_by(dfp, memory,  Preemptible, spark_loader, cores) %>% summarise_at(vars(cost, time), sum, na.rm = TRUE)
+  grouped
+  grouped <- filter(grouped, time > 0.0)
+  p <- ggplot(data=grouped, aes(x=as.numeric(memory), y=cost, color=cores))
+  p <- p + geom_line() + geom_point() 
+  p <- p + facet_grid( cols = vars(spark_loader), scales = "free_y")
+  p <- p + labs(title = "Cost vs Memory for MarkDuplicatesSpark",
+                subtitle="Split Bam Loader and Grouped by Number of Cores",
+                color = "Number of Cores")
+  p <- p + ylab("Cost ($)")
+  p <- p + xlab("Memory (Gb)")
+  p <- p + theme_bw()
+  print(p)
+}
+
 
 plotCoresvsCostBreakdown <-function(df) {
   dfp <- df %>% filter(  spark_loader=="disq" && memory==15 && disk_space==375 ); dfp
@@ -155,7 +175,7 @@ plotCoresvsCostBreakdownPicardControl <-function(dfp) {
   p <- p + xlab("Disk Type")
   p <- p + ylab("Cost (%)")
   p <- p + labs(title="Picard SortSam cost breakdown on SSD and HDD",
-                subtitle("Subdivided by Preemption"),
+                subtitle="Subdivided by Preemption",
                 fill="Cost Category")
   p <- p + theme_bw()
   print(p)
@@ -220,7 +240,7 @@ plotCoresvsCostBreakdown(shrunkbam3)
 plotCoresvsCostBreakdownPicardControl(shrunkbam3)
 ## Making the separeated data
 ## Plotting memory vs cost
-
+plotHadoopBamVsDisq(shrunkbam2)
 plotMemoryVsCostOverSparkLoader(shrunkbam2)
 
 ## plotting various things 

@@ -127,16 +127,16 @@ plotCoresvsCostBreakdownPicardControl <-function(dfp) {
   
   tmpa <- dfp #%>% filter(!grepl("Sorted",execution_type, fixed=TRUE)); 
   tmpa <- separate(data = tmpa, col = execution_type, into = c("execution_type", "Preemptible"), sep = "-")
-  tmpa <- tmpa %>% mutate(Preemptible = str_replace(Preemptible, "p", "Preemptible"))
-  tmpa$Preemptible <- ifelse(is.na(tmpa$Preemptible), 'non-Preemptible', tmpa$Preemptible); tmpa
+  tmpa <- tmpa %>% mutate(mutatedPreemptible = str_replace(Preemptible, "p", "Preemptible"))
+  tmpa$mutatedPreemptible <- ifelse(is.na(tmpa$mutatedPreemptible), 'non-Preemptible', tmpa$mutatedPreemptible); tmpa
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "markduplicatespersistent", "MD-persistent disk"))
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "markduplicatesssd", "MD-SSD"))
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "picardmarkedsortedssd", "Sort-SSD"))
   tmpa <- tmpa %>% mutate(execution_type = str_replace(execution_type, "sortsampersistent", "Sort-persistent disk"))
   
-  grouped <- group_by(tmpa, sku_description, execution_type, Preemptible) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
+  grouped <- group_by(tmpa, sku_description, execution_type, mutatedPreemptible) %>% summarise_at(vars(cost), sum, na.rm = TRUE)
   grouped
-  ggplot(data=grouped, aes(x=execution_type, y=cost, fill=sku_description)) + geom_bar(stat="identity") + facet_grid(. ~Preemptible)
+  ggplot(data=grouped, aes(x=execution_type, y=cost, fill=sku_description)) + geom_bar(stat="identity") + facet_grid(. ~mutatedPreemptible)
 }
 
 
@@ -181,6 +181,7 @@ shrunkbam3 <- bam3 %>% group_by(execution_type, spark_loader, cores, memory, dis
 summed3 <- shrunkbam2 %>% summarise_at(vars(cost:time), sum, na.rm = TRUE)
 summed3
 
+#change memory to be the minimum memory given the number of cores if less was requested
 adjustMemory <- function(memory, cores){
   return(max(memory, 0.9 * cores))
 }
